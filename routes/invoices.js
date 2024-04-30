@@ -45,19 +45,22 @@ router.post('/', async (req, res, next) => {
 // PUT /invoices/:id
 router.put('/:id', async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const { amt } = req.body;
-        const result = await db.query('UPDATE invoices SET amt = $1 WHERE id = $2 RETURNING id, comp_code, amt, paid, add_date, paid_date', [amt, id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Invoice not found' });
-        }
-
-        return res.json({ invoice: result.rows[0] });
+      const { id } = req.params;
+      const { amt, paid } = req.body;
+  
+      let paidDate = null;
+      if (paid) {
+        paidDate = new Date(); // Set paid_date to current date
+      }
+  
+      const result = await db.query('UPDATE invoices SET amt = $1, paid = $2, paid_date = $3 WHERE id = $4 RETURNING *', [amt, paid, paidDate, id]);
+      const updatedInvoice = result.rows[0];
+      return res.json({ invoice: updatedInvoice });
     } catch (err) {
-        return next(err);
+      return next(err);
     }
-});
+  });
+  
 
 // DELETE /invoices/:id
 router.delete('/:id', async (req, res, next) => {
